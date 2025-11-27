@@ -66,11 +66,6 @@ class TermStore:
         children = [self.materialize(cid) for cid in record.children]
         return Term(sym=record.sym, scale=record.scale, children=children)
 
-    def children_of(self, term_id: str) -> Tuple[str, ...]:
-        """Return the immediate child IDs for a stored term."""
-
-        return self.get(term_id).children
-
     def snapshot(self) -> Dict[str, TermRecord]:
         """Return a shallow copy of stored records for inspection/replay."""
 

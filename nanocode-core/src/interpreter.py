@@ -29,19 +29,8 @@ class Execution:
 class Interpreter:
     """Thin orchestration layer around the runtime and scheduler."""
 
-    def run(
-        self,
-        program: Program,
-        until_idle: bool = True,
-        *,
-        walk_children: bool = False,
-        strict_matching: bool = False,
-    ) -> Execution:
-        runtime = Runtime(
-            program.rules,
-            walk_children=walk_children,
-            strict_matching=strict_matching,
-        )
+    def run(self, program: Program, until_idle: bool = True) -> Execution:
+        runtime = Runtime(program.rules)
         root_id = runtime.load(program.root)
 
         if until_idle:

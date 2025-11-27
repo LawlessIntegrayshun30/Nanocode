@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional
 
-from src.rewrite import AmbiguousRuleError, Rule, matching_rules
+from src.rewrite import Rule, first_match
 from src.scheduler import FIFOScheduler
 from src.term_store import TermStore
 from src.terms import Term, term_to_dict
@@ -49,8 +49,6 @@ class Runtime:
         rules: List[Rule],
         scheduler: Optional[FIFOScheduler] = None,
         event_hooks: Optional[List[Callable[[Event], None]]] = None,
-        walk_children: bool = False,
-        strict_matching: bool = False,
     ):
         self.store = TermStore()
         self.rules = rules
@@ -59,51 +57,26 @@ class Runtime:
         self.events: List[Event] = []
         self.root_id: Optional[str] = None
         self._processed: set[str] = set()
-        self._queued: set[str] = set()
-        self.walk_children = walk_children
-        self.strict_matching = strict_matching
 
     def load(self, root: Term) -> str:
         # Reset state for a fresh program load
         self.store = TermStore()
         self.events.clear()
         self._processed.clear()
-        self._queued.clear()
         self.scheduler.clear()
 
         self.root_id = self.store.add_term(root)
-        self._schedule_tree(self.root_id)
+        self.scheduler.push(self.root_id)
         return self.root_id
-
-    def _schedule_term(self, term_id: str) -> None:
-        if term_id in self._processed or term_id in self._queued:
-            return
-
-        self.scheduler.push(term_id)
-        self._queued.add(term_id)
-
-    def _schedule_tree(self, term_id: str) -> None:
-        self._schedule_term(term_id)
-        if not self.walk_children:
-            return
-
-        for child_id in self.store.children_of(term_id):
-            self._schedule_tree(child_id)
 
     def step(self) -> Optional[Event]:
         term_id = self.scheduler.pop()
         if term_id is None:
             return None
 
-        self._queued.discard(term_id)
-
         term = self.store.materialize(term_id)
         self._processed.add(term_id)
-        matches = matching_rules(self.rules, term)
-        if self.strict_matching and len(matches) > 1:
-            raise AmbiguousRuleError(term, matches)
-
-        rule = matches[0] if matches else None
+        rule = first_match(self.rules, term)
         if rule is None:
             return None
 
@@ -124,7 +97,7 @@ class Runtime:
         # Only push again if the term actually changed to avoid endless cycles when
         # a rule is idempotent with respect to the store's interning.
         if new_id != term_id and new_id not in self._processed:
-            self._schedule_tree(new_id)
+            self.scheduler.push(new_id)
         return event
 
     def run(self, max_steps: int = 1) -> List[Event]:

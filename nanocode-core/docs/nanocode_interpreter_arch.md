@@ -67,8 +67,6 @@
 ### CLI entry point
 - `python -m src.cli path/to/program.nanocode` parses an S-expression program, runs it through the runtime, and prints a JSON summary.
 - `--trace-jsonl` streams runtime events to a JSONL file for downstream replay/visualization.
-- `--walk-children` instructs the runtime to automatically schedule child terms for rewriting (instead of only rewriting the frontiers returned by rules).
-- `--strict-matching` raises on ambiguous rule matches rather than silently selecting the first rule, helping surface coherence issues early.
 
 ## Open questions to resolve during implementation
 - What minimal DSL syntax is acceptable for v0? (Recommendation: S-expressions with `(expand ...)`/`(reduce ...)` forms.)

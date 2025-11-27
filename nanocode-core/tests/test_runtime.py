@@ -1,7 +1,5 @@
-import pytest
-
 from src import terms
-from src.rewrite import AmbiguousRuleError, Pattern, Rule
+from src.rewrite import Pattern, Rule
 from src.runtime import Runtime
 
 
@@ -59,40 +57,3 @@ def test_runtime_load_resets_state():
     assert first_root != second_root
     assert len(runtime.store.snapshot()) == 1
     assert runtime.events == []
-
-
-def test_runtime_optionally_walks_children():
-    rules = [
-        Rule(
-            name="expand_shallow_leaves",
-            pattern=Pattern(predicate=lambda t: not t.children and t.scale < 2),
-            action=lambda t, _: terms.expand(t, fanout=2),
-        )
-    ]
-
-    runtime = Runtime(rules=rules, walk_children=True)
-    runtime.load(terms.Term("seed", 0))
-
-    events = runtime.run_until_idle(max_steps=20)
-
-    expanded_symbols = {event.before_term.sym for event in events}
-    assert "seed" in expanded_symbols
-    # With child walking enabled, grandchildren participate in rewriting.
-    assert any(sym.startswith("seed.0") or sym.startswith("seed.1") for sym in expanded_symbols)
-
-
-def test_runtime_can_fail_on_ambiguous_matches():
-    rules = [
-        Rule(name="first", pattern=Pattern(sym="seed"), action=lambda t, _: terms.expand(t, fanout=1)),
-        Rule(name="second", pattern=Pattern(sym="seed"), action=lambda t, _: t),
-    ]
-
-    runtime = Runtime(rules=rules, strict_matching=True)
-    runtime.load(terms.Term("seed", 0))
-
-    with pytest.raises(AmbiguousRuleError) as excinfo:
-        runtime.step()
-
-    message = str(excinfo.value)
-    assert "ambiguous match" in message
-    assert "first" in message and "second" in message

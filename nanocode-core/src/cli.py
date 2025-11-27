@@ -13,14 +13,6 @@ from src.trace import JSONLTracer
 
 
 def _read_program_source(path: str) -> str:
-    """Load program text from a file path or stdin.
-
-    Passing ``-`` reads from stdin to support piping programs into the CLI.
-    """
-
-    if path == "-":
-        return sys.stdin.read()
-
     target = Path(path)
     if not target.exists():
         raise FileNotFoundError(path)
@@ -49,16 +41,6 @@ def run_cli(argv: Iterable[str] | None = None) -> int:
         action="store_true",
         help="Run for the max-steps budget without waiting for the scheduler to idle",
     )
-    parser.add_argument(
-        "--walk-children",
-        action="store_true",
-        help="Automatically schedule child terms for rewriting",
-    )
-    parser.add_argument(
-        "--strict-matching",
-        action="store_true",
-        help="Fail fast if multiple rules match the same term instead of picking the first",
-    )
 
     args = parser.parse_args(list(argv) if argv is not None else None)
 
@@ -70,11 +52,7 @@ def run_cli(argv: Iterable[str] | None = None) -> int:
         if args.max_steps is not None:
             program = replace(program, max_steps=args.max_steps)
 
-        runtime = Runtime(
-            program.rules,
-            walk_children=args.walk_children,
-            strict_matching=args.strict_matching,
-        )
+        runtime = Runtime(program.rules)
         sink = _add_tracer(runtime, args.trace_jsonl) if args.trace_jsonl else None
 
         runtime.load(program.root)
