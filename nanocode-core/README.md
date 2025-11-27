@@ -27,8 +27,13 @@ Use `--strict-matching` to fail fast when multiple rules match the same term; wi
 python -m src.cli path/to/program.nanocode --strict-matching
 ```
 
-Programs are validated before execution: rule names must be unique, scales cannot be negative, and step budgets must be positiv
-e. Invalid inputs surface as CLI errors so issues are caught early.
+Persist a JSON snapshot of the term store for replay or debugging with `--store-json`:
+
+```
+python -m src.cli path/to/program.nanocode --store-json state/store.json
+```
+
+Programs are validated before execution: rule names must be unique, scales cannot be negative, and step budgets must be positive. Invalid inputs surface as CLI errors so issues are caught early.
 
 The CLI summary now includes per-rule and per-scale rewrite counts so you can track which rules fired and at what scale:
 

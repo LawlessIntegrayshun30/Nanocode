@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
-from typing import Dict, Iterable, Tuple
+from typing import Dict, Iterable, Mapping, Tuple
 
 from src.terms import Term
 
@@ -75,6 +75,30 @@ class TermStore:
         """Return a shallow copy of stored records for inspection/replay."""
 
         return dict(self._records)
+
+    def to_json(self) -> Dict[str, Dict[str, object]]:
+        """JSON-friendly view of stored records keyed by term ID."""
+
+        return {
+            term_id: {"sym": record.sym, "scale": record.scale, "children": list(record.children)}
+            for term_id, record in self._records.items()
+        }
+
+    @classmethod
+    def from_json(cls, payload: Mapping[str, Mapping[str, object]]) -> "TermStore":
+        """Rehydrate a term store from a JSON-ready mapping."""
+
+        store = cls()
+        for term_id, record_data in payload.items():
+            children = tuple(str(child) for child in record_data.get("children", ()))
+            record = TermRecord(
+                sym=str(record_data["sym"]),
+                scale=int(record_data["scale"]),
+                children=children,
+            )
+            store._records[term_id] = record
+            store._index[TermKey(record.sym, record.scale, record.children)] = term_id
+        return store
 
     def __len__(self) -> int:  # pragma: no cover - trivial
         return len(self._records)

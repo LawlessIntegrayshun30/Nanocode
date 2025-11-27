@@ -63,6 +63,36 @@ def test_cli_accepts_stdin(tmp_path: Path):
     assert summary["rule_counts"]
 
 
+def test_cli_can_emit_store_snapshot(tmp_path: Path):
+    program_src = """
+    (program demo
+      (root (seed :scale 0))
+      (rules
+        (rule grow (pattern :sym seed) (action expand :fanout 2))
+        (rule normalize (pattern :sym F(seed)) (action reduce))
+      )
+      (max_steps 4)
+    )
+    """
+
+    program_file = tmp_path / "demo.nanocode"
+    program_file.write_text(program_src)
+    store_file = tmp_path / "store.json"
+
+    result = subprocess.run(
+        [sys.executable, "-m", "src.cli", str(program_file), "--store-json", str(store_file)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    summary = json.loads(result.stdout)
+    store_payload = json.loads(store_file.read_text())
+
+    assert summary["root"] in store_payload
+    assert any(record["children"] for record in store_payload.values())
+
+
 def test_cli_strict_matching_fails_on_ambiguity(tmp_path: Path):
     program_src = """
     (program demo

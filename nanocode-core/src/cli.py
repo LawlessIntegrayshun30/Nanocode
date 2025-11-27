@@ -59,6 +59,11 @@ def run_cli(argv: Iterable[str] | None = None) -> int:
         action="store_true",
         help="Fail fast if multiple rules match the same term instead of picking the first",
     )
+    parser.add_argument(
+        "--store-json",
+        dest="store_json",
+        help="Write the term store snapshot to a JSON file for replay/inspection",
+    )
 
     args = parser.parse_args(list(argv) if argv is not None else None)
 
@@ -89,6 +94,11 @@ def run_cli(argv: Iterable[str] | None = None) -> int:
             "root": runtime.root_id,
             **stats,
         }
+
+        if args.store_json:
+            store_path = Path(args.store_json)
+            store_path.parent.mkdir(parents=True, exist_ok=True)
+            store_path.write_text(json.dumps(runtime.store.to_json(), indent=2))
 
         print(json.dumps(summary, indent=2))
         return 0

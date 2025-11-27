@@ -71,6 +71,7 @@
 - `--walk-children` instructs the runtime to automatically schedule child terms for rewriting (instead of only rewriting the frontiers returned by rules).
 - `--strict-matching` raises on ambiguous rule matches rather than silently selecting the first rule, helping surface coherence issues early.
 - The CLI summary includes per-rule and per-scale counters (`rule_counts`/`scale_counts`) alongside the frontier and store size to highlight which rules fired and at what scale.
+- `--store-json` writes the term store snapshot to disk so runs can be replayed or inspected offline without re-running the program.
 
 ## Open questions to resolve during implementation
 - What minimal DSL syntax is acceptable for v0? (Recommendation: S-expressions with `(expand ...)`/`(reduce ...)` forms.)
