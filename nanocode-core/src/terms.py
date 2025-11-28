@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import List, Callable
+from typing import List, Callable, Dict, Any
 
 @dataclass(frozen=True)
 class Term:
@@ -26,3 +26,13 @@ def reduce(u: Term, summarizer: Callable[[List[Term]], str] = None) -> Term:
         _ = summarizer(u.children)
 
     return Term(sym=base_sym, scale=u.scale - 1)
+
+
+def term_to_dict(term: Term) -> Dict[str, Any]:
+    """Serialize a term into a JSON-friendly dict for tracing."""
+
+    return {
+        "sym": term.sym,
+        "scale": term.scale,
+        "children": [term_to_dict(child) for child in term.children],
+    }
