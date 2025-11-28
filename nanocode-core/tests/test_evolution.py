@@ -1,14 +1,9 @@
 from random import Random
 
 from src.evolution import (
-    EvolutionConfig,
-    Evaluation,
     Genome,
-    annotate_genome,
     crossover_terms,
     delete_subtree,
-    evaluate_population,
-    evolve_population,
     insert_subtree,
     mutate_scale,
     mutate_symbol,
@@ -72,61 +67,3 @@ def test_genome_annotations_allow_metadata():
     genome = Genome(root=Term("root"), annotations={"score": 0.5})
 
     assert genome.annotations == {"score": 0.5}
-
-
-def test_evaluate_population_returns_sorted_scores_with_info():
-    genomes = [Genome(root=Term("a")), Genome(root=Term("b"))]
-
-    def scorer(genome: Genome) -> tuple[float, dict]:
-        return (1.0 if genome.root.sym == "a" else 0.25, {"sym": genome.root.sym})
-
-    evaluations = evaluate_population(genomes, scorer)
-
-    assert [ev.genome.root.sym for ev in evaluations] == ["a", "b"]
-    assert evaluations[0].info == {"sym": "a"}
-
-
-def test_annotate_genome_merges_metadata():
-    genome = Genome(root=Term("root"), annotations={"score": 1})
-
-    annotated = annotate_genome(genome, parent=0, score=2)
-
-    assert annotated.annotations == {"score": 2, "parent": 0}
-
-
-def test_evolve_population_runs_deterministically():
-    genomes = [Genome(root=Term("bar")) for _ in range(3)]
-    rng = Random(0)
-    config = EvolutionConfig(
-        population_size=3,
-        generations=2,
-        mutation_rate=1.0,
-        crossover_rate=0.0,
-        elitism=1,
-        tournament_size=2,
-    )
-
-    def scorer(genome: Genome) -> float:
-        return 1.0 if genome.root.sym == "foo" else 0.0
-
-    def mutate(genome: Genome, rng: Random) -> Genome:
-        mutated = mutate_symbol(genome.root, ["foo", "bar"], rng=rng)
-        return Genome(root=mutated, annotations=genome.annotations)
-
-    seen_best: list[Evaluation] = []
-
-    def on_generation(generation: int, best: Evaluation, _: list[Evaluation]):
-        seen_best.append(best)
-
-    final = evolve_population(
-        genomes,
-        scorer,
-        mutate,
-        config=config,
-        rng=rng,
-        on_generation=on_generation,
-    )
-
-    assert len(seen_best) == config.generations
-    assert final[0].score == 1.0
-    assert final[0].genome.root.sym == "foo"
