@@ -36,9 +36,7 @@ class LIFOScheduler:
         self._stack.append(term_id)
 
     def pop(self) -> Optional[str]:
-        if not self._stack:
-            return None
-        return self._stack.pop()
+        return None if not self._stack else self._stack.pop()
 
     def clear(self) -> None:
         self._stack.clear()
