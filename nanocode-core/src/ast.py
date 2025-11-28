@@ -157,7 +157,13 @@ def parse_rule(expr: object) -> Rule:
 
 
 def parse_program(src: str) -> Program:
-    expr = _read_tokens(_tokenize(src))
+    tokens = _tokenize(src)
+    expr = _read_tokens(tokens)
+
+    # Ensure there are no remaining top-level tokens after the (program ...) form
+    remaining_tokens = list(tokens)
+    if remaining_tokens:
+        raise ValueError(f"Unexpected extra tokens after (program ...): {remaining_tokens}")
     if not isinstance(expr, list) or not expr or expr[0] != "program":
         raise ValueError("Program must start with (program ...)")
 
