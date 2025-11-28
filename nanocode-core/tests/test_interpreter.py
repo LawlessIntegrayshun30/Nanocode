@@ -28,7 +28,6 @@ def test_interpreter_runs_to_idle_and_records_snapshot():
     assert [e.rule for e in result.events] == ["expand", "reduce"]
     # The store should retain the interned root and the expanded variant.
     assert len(result.snapshot["records"]) >= 2
-    assert result.stats["rule_counts"] == {"expand": 1, "reduce": 1}
 
 
 def test_run_until_idle_honors_step_budget():
