@@ -62,16 +62,11 @@
   - `(root <term>)` builds a nested `Term` tree where `:scale N` overrides per-node scale and child lists follow the symbol.
   - `(rules (rule <name> (pattern :sym foo :scale 0) (action expand :fanout 2)) ...)` turns into `Rule` objects wired to built-in `expand`/`reduce` actions.
   - `(max_steps N)` controls the interpreter budget.
-- Programs are validated before execution: duplicate rule names are rejected, negative scales are disallowed, and `max_steps` must be positive so malformed inputs fail fast.
 - This parser feeds the existing `Interpreter` so end-to-end runs can be described textually and replayed via the runtime/tracer without hand-authoring Python rules.
 
 ### CLI entry point
 - `python -m src.cli path/to/program.nanocode` parses an S-expression program, runs it through the runtime, and prints a JSON summary.
 - `--trace-jsonl` streams runtime events to a JSONL file for downstream replay/visualization.
-- `--walk-children` instructs the runtime to automatically schedule child terms for rewriting (instead of only rewriting the frontiers returned by rules).
-- `--strict-matching` raises on ambiguous rule matches rather than silently selecting the first rule, helping surface coherence issues early.
-- The CLI summary includes per-rule and per-scale counters (`rule_counts`/`scale_counts`) alongside the frontier and store size to highlight which rules fired and at what scale.
-- `--store-json` writes the term store snapshot to disk so runs can be replayed or inspected offline without re-running the program.
 
 ## Open questions to resolve during implementation
 - What minimal DSL syntax is acceptable for v0? (Recommendation: S-expressions with `(expand ...)`/`(reduce ...)` forms.)

@@ -1,7 +1,5 @@
-import pytest
-
 from src import terms
-from src.rewrite import AmbiguousRuleError, Pattern, Rule
+from src.rewrite import Pattern, Rule
 from src.runtime import Runtime
 
 
@@ -59,60 +57,3 @@ def test_runtime_load_resets_state():
     assert first_root != second_root
     assert len(runtime.store.snapshot()) == 1
     assert runtime.events == []
-
-
-def test_runtime_optionally_walks_children():
-    rules = [
-        Rule(
-            name="expand_shallow_leaves",
-            pattern=Pattern(predicate=lambda t: not t.children and t.scale < 2),
-            action=lambda t, _: terms.expand(t, fanout=2),
-        )
-    ]
-
-    runtime = Runtime(rules=rules, walk_children=True)
-    runtime.load(terms.Term("seed", 0))
-
-    events = runtime.run_until_idle(max_steps=20)
-
-    expanded_symbols = {event.before_term.sym for event in events}
-    assert "seed" in expanded_symbols
-    # With child walking enabled, grandchildren participate in rewriting.
-    assert any(sym.startswith("seed.0") or sym.startswith("seed.1") for sym in expanded_symbols)
-
-
-def test_runtime_can_fail_on_ambiguous_matches():
-    rules = [
-        Rule(name="first", pattern=Pattern(sym="seed"), action=lambda t, _: terms.expand(t, fanout=1)),
-        Rule(name="second", pattern=Pattern(sym="seed"), action=lambda t, _: t),
-    ]
-
-    runtime = Runtime(rules=rules, strict_matching=True)
-    runtime.load(terms.Term("seed", 0))
-
-    with pytest.raises(AmbiguousRuleError) as excinfo:
-        runtime.step()
-
-    message = str(excinfo.value)
-    assert "ambiguous match" in message
-    assert "first" in message and "second" in message
-
-
-def test_runtime_tracks_rule_and_scale_counts():
-    rules = [
-        Rule(name="expand", pattern=Pattern(predicate=lambda t: not t.children), action=expand_leaf),
-        Rule(name="reduce", pattern=Pattern(predicate=lambda t: t.sym.startswith("F(")), action=reduce_f_term),
-    ]
-
-    runtime = Runtime(rules=rules, walk_children=False)
-    runtime.load(terms.Term("seed", 1))
-
-    runtime.run_until_idle(max_steps=4)
-
-    stats = runtime.stats()
-
-    assert stats["events"] == 2
-    assert stats["rule_counts"] == {"expand": 1, "reduce": 1}
-    # Expand bumps scale to 2 for the intermediate node; reduce acts at that scale.
-    assert stats["scale_counts"] == {1: 1, 2: 1}
-    assert stats["store_size"] >= 2
