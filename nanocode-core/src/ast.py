@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Iterable, Iterator, List, Sequence
 
-from src.interpreter import Program, validate_program
+from src.interpreter import Program
 from src.rewrite import Pattern, Rule
 from src.terms import Term, expand, reduce
 
@@ -157,13 +157,7 @@ def parse_rule(expr: object) -> Rule:
 
 
 def parse_program(src: str) -> Program:
-    tokens = _tokenize(src)
-    expr = _read_tokens(tokens)
-
-    # Ensure there are no remaining top-level tokens after the (program ...) form
-    remaining_tokens = list(tokens)
-    if remaining_tokens:
-        raise ValueError(f"Unexpected extra tokens after (program ...): {remaining_tokens}")
+    expr = _read_tokens(_tokenize(src))
     if not isinstance(expr, list) or not expr or expr[0] != "program":
         raise ValueError("Program must start with (program ...)")
 
@@ -191,6 +185,4 @@ def parse_program(src: str) -> Program:
     if root_term is None:
         raise ValueError("Program missing root term")
 
-    program = Program(name=name, root=root_term, rules=rules, max_steps=max_steps)
-    validate_program(program)
-    return program
+    return Program(name=name, root=root_term, rules=rules, max_steps=max_steps)

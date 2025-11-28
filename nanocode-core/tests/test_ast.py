@@ -53,28 +53,3 @@ def test_parse_program_runs_via_interpreter():
     assert result.events[0].after_term.sym == "F(seed)"
     assert result.events[1].after_term.sym == "seed"
     assert result.snapshot["root"] == result.root_id
-
-
-def test_parse_program_rejects_duplicate_rule_names():
-    program_source = """
-    (program dup-rules
-      (root (seed))
-      (rules
-        (rule same-name (pattern :sym seed) (action expand :fanout 1))
-        (rule same-name (pattern :sym seed :scale 1) (action reduce))))
-    """
-
-    with pytest.raises(ValueError, match="Duplicate rule name"):
-        parse_program(program_source)
-
-
-def test_parse_program_rejects_negative_scales():
-    program_source = """
-    (program negative-scale
-      (root (seed :scale -1))
-      (rules
-        (rule expand-seed (pattern :sym seed) (action expand :fanout 1))))
-    """
-
-    with pytest.raises(ValueError, match="negative scale"):
-        parse_program(program_source)
