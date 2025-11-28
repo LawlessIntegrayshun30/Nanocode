@@ -18,9 +18,7 @@ class Pattern:
             return False
         if self.scale is not None and term.scale != self.scale:
             return False
-        if self.predicate and not self.predicate(term):
-            return False
-        return True
+        return bool(not self.predicate or self.predicate(term))
 
 
 @dataclass(frozen=True)
