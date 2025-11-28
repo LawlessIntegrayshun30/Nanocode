@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Iterable, Iterator, List, Sequence
 
-from src.interpreter import Program, validate_program
+from src.interpreter import Program
 from src.rewrite import Pattern, Rule
 from src.terms import Term, expand, reduce
 
@@ -21,21 +21,8 @@ def _symbol_from_expr(expr: object) -> str:
     raise ValueError(f"Invalid symbol expression: {expr}")
 
 
-def _strip_comments(src: str) -> str:
-    """Remove semicolon-to-EOL comments for a more forgiving DSL."""
-
-    lines = []
-    for line in src.splitlines():
-        # Treat ';' as comment leader until end of line, mirroring Lisp-style
-        # S-expression conventions.
-        uncommented = line.split(";", 1)[0]
-        lines.append(uncommented)
-    return "\n".join(lines)
-
-
 def _tokenize(src: str) -> List[Token]:
-    cleaned = _strip_comments(src)
-    return re.findall(r"\(|\)|[^\s()]+", cleaned)
+    return re.findall(r"\(|\)|[^\s()]+", src)
 
 
 def _read_tokens(tokens: Sequence[Token]) -> object:
@@ -198,6 +185,4 @@ def parse_program(src: str) -> Program:
     if root_term is None:
         raise ValueError("Program missing root term")
 
-    program = Program(name=name, root=root_term, rules=rules, max_steps=max_steps)
-    validate_program(program)
-    return program
+    return Program(name=name, root=root_term, rules=rules, max_steps=max_steps)
