@@ -62,33 +62,11 @@
   - `(root <term>)` builds a nested `Term` tree where `:scale N` overrides per-node scale and child lists follow the symbol.
   - `(rules (rule <name> (pattern :sym foo :scale 0) (action expand :fanout 2)) ...)` turns into `Rule` objects wired to built-in `expand`/`reduce` actions.
   - `(max_steps N)` controls the interpreter budget.
-  - Semicolon-delimited comments are ignored so programs can be annotated inline without impacting parsing.
-- Programs are validated before execution: duplicate rule names are rejected, negative scales are disallowed, and `max_steps` must be positive so malformed inputs fail fast.
 - This parser feeds the existing `Interpreter` so end-to-end runs can be described textually and replayed via the runtime/tracer without hand-authoring Python rules.
 
 ### CLI entry point
 - `python -m src.cli path/to/program.nanocode` parses an S-expression program, runs it through the runtime, and prints a JSON summary.
-- `--dry-run` parses and validates a program (and optional stored snapshot) without executing rewrites to surface issues quickly.
 - `--trace-jsonl` streams runtime events to a JSONL file for downstream replay/visualization.
-- `--walk-children` instructs the runtime to automatically schedule child terms for rewriting (instead of only rewriting the frontiers returned by rules). Use `--walk-depth N` to cap recursion depth when walking children to avoid traversing very deep trees.
-- `--strict-matching` raises on ambiguous rule matches rather than silently selecting the first rule, helping surface coherence issues early.
-- `--detect-conflicts` rejects programs with deterministic overlapping rule patterns (same symbol/scale without predicates) as a lightweight coherence guard before execution.
-- `--scheduler lifo` switches the rewrite order to a LIFO/stack strategy (FIFO remains the default), useful for depth-first traversals.
-- `--scheduler random` takes a seeded randomized walk through the frontier; pair with `--scheduler-seed` for reproducible runs. Random scheduler state (seed and RNG state) is persisted in snapshots so resuming preserves selection order.
-- The CLI summary includes runtime configuration (scheduler, strict-matching, walk-children) plus per-rule and per-scale counters (`rule_counts`/`scale_counts`) alongside the frontier, store size, idle/budget exhaustion flags to highlight which rules fired, how much work remains, and whether a step budget halted execution.
-- `--store-json` writes the term store snapshot to disk with root/frontier/processed metadata and runtime configuration so runs can be replayed or inspected offline without re-running the program. Pair with `--steps-only` to capture mid-flight snapshots.
-- `--load-store` bootstraps the runtime from a stored snapshot, honoring the persisted scheduler/strict/walk settings (including stored walk-depth) by default (override with `--no-walk-children`, `--walk-depth`, or `--strict-matching/--no-strict-matching`).
-- `--rule-budget name=N` (repeatable) caps how many times a rule may fire, preventing runaway rewrites; budgets are persisted in snapshots and surfaced in summaries alongside any exhausted budget list for visibility/resume fidelity.
-- `--only-rule name` (repeatable) restricts execution to specific rules, while `--skip-rule name` excludes rules; filters are validated against the program, persisted in snapshots, and surfaced in summaries so resumed runs preserve the same rule visibility.
-- `--only-scale N` (repeatable) confines work to terms at specific scales, while `--skip-scale N` excludes scales; filters must be non-negative, persist in snapshots, and are surfaced in summaries so resumed runs mirror the same scale visibility.
-- `--max-terms N` halts rewriting once the store exceeds `N` unique terms, surfacing `term_limit_exhausted` in summaries/snapshots so pipelines can fail fast instead of allocating unbounded DAGs.
-
-### Evolutionary substrate (early scaffolding)
-- `src.evolution` offers deterministic mutations (symbol changes, scale tweaks, subtree insertion/deletion) and crossover between `Term` trees to treat Nanocode programs as genomes. The helpers accept seeded RNGs and contextual spawn functions so evolutionary loops remain deterministic and operate purely over Nanocode structures.
-- `evaluate_population` and `evolve_population` add scoring-aware selection, elitism, and callback-driven generation logging so deterministic evolutionary searches can run over Nanocode genomes with provenance preserved in annotations.
-
-### Meta-level program representation
-- Actions are wrapped in `Action` objects with stable names/params, enabling serialization of rules and programs into Nanocode `Term` structures via `src.meta` (`rule_to_term`, `program_to_term`) and reconstruction through `term_to_rule`/`term_to_program`. This allows interpreters and rule sets to be manipulated as Nanocode data, paving the way for self-hosted meta-rewrites and evolutionary mutation of full interpreters.
 
 ## Open questions to resolve during implementation
 - What minimal DSL syntax is acceptable for v0? (Recommendation: S-expressions with `(expand ...)`/`(reduce ...)` forms.)
