@@ -77,7 +77,8 @@ class TermStore:
     @staticmethod
     def _hash_key(key: TermKey) -> str:
         raw = f"{key.sym}|{key.scale}|{','.join(key.children)}"
-        return hashlib.sha256(raw.encode()).hexdigest()[:16]
+        # Use the full SHA-256 hex digest to minimize collision risk.
+        return hashlib.sha256(raw.encode()).hexdigest()
 
     def __contains__(self, term_id: str) -> bool:  # pragma: no cover - trivial
         return term_id in self._records
