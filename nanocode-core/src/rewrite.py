@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Iterable, Optional
+from typing import Callable, Optional
 
 from src.term_store import TermStore
 from src.terms import Term
@@ -33,18 +33,8 @@ class Rule:
         return self.pattern.matches(term)
 
 
-class AmbiguousRuleError(Exception):
-    def __init__(self, term: Term, rules: Iterable[Rule]):
-        rule_names = ", ".join(rule.name for rule in rules)
-        super().__init__(f"ambiguous match for term {term.sym} at scale {term.scale}: {rule_names}")
-        self.term = term
-        self.rules = list(rules)
-
-
-def matching_rules(rules: list[Rule], term: Term) -> list[Rule]:
-    return [rule for rule in rules if rule.applies(term)]
-
-
 def first_match(rules: list[Rule], term: Term) -> Optional[Rule]:
-    matches = matching_rules(rules, term)
-    return matches[0] if matches else None
+    for rule in rules:
+        if rule.applies(term):
+            return rule
+    return None

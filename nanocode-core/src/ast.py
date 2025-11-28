@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Iterable, Iterator, List, Sequence
 
-from src.interpreter import Program, validate_program
+from src.interpreter import Program
 from src.rewrite import Pattern, Rule
 from src.terms import Term, expand, reduce
 
@@ -185,6 +185,4 @@ def parse_program(src: str) -> Program:
     if root_term is None:
         raise ValueError("Program missing root term")
 
-    program = Program(name=name, root=root_term, rules=rules, max_steps=max_steps)
-    validate_program(program)
-    return program
+    return Program(name=name, root=root_term, rules=rules, max_steps=max_steps)
