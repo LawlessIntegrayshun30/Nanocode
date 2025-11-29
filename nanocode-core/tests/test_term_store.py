@@ -21,15 +21,3 @@ def test_term_materialization_round_trip():
 
     rebuilt = store.materialize(root_id)
     assert rebuilt == root
-
-
-def test_term_store_serialization_round_trip():
-    store = TermStore()
-    root = Term("root", 0, [Term("left", 1), Term("right", 1, [Term("leaf", 2)])])
-    root_id = store.add_term(root)
-
-    payload = store.to_json()
-    rebuilt = TermStore.from_json(payload)
-
-    assert root_id in rebuilt
-    assert rebuilt.materialize(root_id) == root

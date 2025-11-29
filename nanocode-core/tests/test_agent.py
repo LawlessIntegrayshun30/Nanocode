@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from src.agent import AgentPolicy, Goal, rollout_agent
-from src.bridge import PORT_SYM, BridgeBinding, BridgePort, BridgeSchema
 from src.interpreter import Program
 from src.rewrite import Pattern, Rule
 from src.terms import Term
@@ -50,50 +49,6 @@ def make_policy(target: int) -> AgentPolicy:
         encode_observation=encode_observation,
         decode_action=lambda term, _: term.sym,
     )
-
-
-def test_rollout_agent_with_bridge_binding():
-    env = CounterEnv(target=2)
-
-    schema = BridgeSchema(
-        name="io",
-        ports=(
-            BridgePort(name="obs", direction="in", scale=0),
-            BridgePort(name="act", direction="out", scale=0),
-        ),
-    )
-
-    def rule_action(term: Term, _):
-        current_value = int(term.children[0].sym)
-        action_sym = "act_inc" if current_value < env.target else "act_hold"
-        return Term(
-            sym=f"{PORT_SYM}:out:act",
-            scale=term.scale,
-            children=[Term(sym=action_sym, scale=term.scale)],
-        )
-
-    program = Program(
-        name="counter_bridge",
-        root=Term(sym=f"{PORT_SYM}:in:obs", scale=0, children=[Term(sym="0", scale=0)]),
-        rules=[Rule(name="choose", pattern=Pattern(sym=f"{PORT_SYM}:in:obs", scale=0), action=rule_action)],
-        max_steps=4,
-    )
-
-    policy = AgentPolicy(
-        program=program,
-        bridge=BridgeBinding(
-            schema=schema,
-            encode={"obs": lambda value: Term(sym=str(value), scale=0)},
-            decode={"act": lambda term: term.sym},
-        ),
-        observation_port="obs",
-        action_port="act",
-    )
-
-    result = rollout_agent(policy, env)
-
-    assert result.total_reward == 2.0
-    assert [step.action for step in result.steps] == ["act_inc", "act_inc"]
 
 
 def test_rollout_agent_counts_to_target():

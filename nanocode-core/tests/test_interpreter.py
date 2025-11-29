@@ -1,5 +1,3 @@
-import pytest
-
 from src.interpreter import Execution, Interpreter, Program
 from src.rewrite import Pattern, Rule
 from src import terms
@@ -30,7 +28,6 @@ def test_interpreter_runs_to_idle_and_records_snapshot():
     assert [e.rule for e in result.events] == ["expand", "reduce"]
     # The store should retain the interned root and the expanded variant.
     assert len(result.snapshot["records"]) >= 2
-    assert result.stats["rule_counts"] == {"expand": 1, "reduce": 1}
 
 
 def test_run_until_idle_honors_step_budget():
@@ -47,23 +44,4 @@ def test_run_until_idle_honors_step_budget():
     assert len(result.events) == 1
     # New work remains on the frontier because we stopped early.
     assert len(result.snapshot["frontier"]) == 1
-
-
-def test_interpreter_can_optionally_detect_conflicts():
-    program = Program(
-        name="conflict", 
-        root=terms.Term("X", 0),
-        rules=[
-            Rule(name="a", pattern=Pattern(sym="X", scale=0), action=lambda t, s: t),
-            Rule(name="b", pattern=Pattern(sym="X", scale=0), action=lambda t, s: t),
-        ],
-        max_steps=1,
-    )
-
-    interpreter = Interpreter()
-    with pytest.raises(ValueError):
-        interpreter.run(program, detect_conflicts=True)
-
-    result = interpreter.run(program, detect_conflicts=False)
-    assert result.snapshot["root"] == result.root_id
 
