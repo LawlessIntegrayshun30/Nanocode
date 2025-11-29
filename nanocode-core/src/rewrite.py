@@ -48,12 +48,21 @@ def lift_action() -> Action:
     return Action(name="lift", params={}, fn=_lift)
 
 
-def action_from_spec(name: str, params: dict[str, object]) -> Action:
+def action_from_spec(
+    name: str,
+    params: dict[str, object],
+    summarizers: dict[str, Callable[[list[Term]], str]] | None = None,
+) -> Action:
     if name == "expand":
         fanout = int(params.get("fanout", 3))
         return expand_action(fanout=fanout)
     if name == "reduce":
-        return reduce_action()
+        summarizer_name = params.get("summarizer")
+        if summarizer_name is None:
+            return reduce_action()
+        if summarizers and summarizer_name in summarizers:
+            return reduce_action(summarizer=summarizers[summarizer_name])
+        raise ValueError(f"Unknown summarizer '{summarizer_name}' for reduce action")
     if name == "lift":
         return lift_action()
     raise ValueError(f"Unknown action spec: {name}")

@@ -52,3 +52,18 @@ def test_action_term_rejects_unknown_names():
     with pytest.raises(ValueError):
         term_to_action(bad_term)
 
+
+def test_reduce_action_roundtrip_requires_registered_summarizer():
+    def summarize(children: list[Term]) -> str:
+        return f"span={len(children)}"
+
+    rule = Rule(name="shrink", pattern=Pattern(sym="x"), action=reduce_action(summarizer=summarize))
+    rule_term = rule_to_term(rule)
+
+    with pytest.raises(ValueError):
+        term_to_rule(rule_term)
+
+    restored = term_to_rule(rule_term, summarizers={"summarize": summarize})
+    assert restored.action.name == "reduce"
+    assert restored.action.params["summarizer"] == "summarize"
+

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, Optional
+from typing import Callable, Iterable, Optional
 
 from src.interpreter import Program, validate_program
 from src.rewrite import Action, Pattern, Rule, action_from_spec
@@ -81,7 +81,9 @@ def action_to_term(action: Action) -> Term:
     )
 
 
-def term_to_action(term: Term) -> Action:
+def term_to_action(
+    term: Term, summarizers: dict[str, Callable[[list[Term]], str]] | None = None
+) -> Action:
     if term.sym != "action":
         raise ValueError(f"Expected action term, got {term.sym}")
 
@@ -98,7 +100,7 @@ def term_to_action(term: Term) -> Action:
                 continue
             params[param.sym] = _value_from_term(param.children[0])
 
-    return action_from_spec(name, params)
+    return action_from_spec(name, params, summarizers=summarizers)
 
 
 def rule_to_term(rule: Rule) -> Term:
@@ -112,7 +114,9 @@ def rule_to_term(rule: Rule) -> Term:
     )
 
 
-def term_to_rule(term: Term) -> Rule:
+def term_to_rule(
+    term: Term, summarizers: dict[str, Callable[[list[Term]], str]] | None = None
+) -> Rule:
     if term.sym != "rule":
         raise ValueError(f"Expected rule term, got {term.sym}")
 
@@ -128,7 +132,7 @@ def term_to_rule(term: Term) -> Rule:
     return Rule(
         name=name_child.children[0].sym,
         pattern=term_to_pattern(pattern_child),
-        action=term_to_action(action_child),
+        action=term_to_action(action_child, summarizers=summarizers),
     )
 
 
@@ -145,7 +149,9 @@ def program_to_term(program: Program) -> Term:
     return Term(sym="program", children=config_children)
 
 
-def term_to_program(term: Term) -> Program:
+def term_to_program(
+    term: Term, summarizers: dict[str, Callable[[list[Term]], str]] | None = None
+) -> Program:
     if term.sym != "program":
         raise ValueError(f"Expected program term, got {term.sym}")
 
@@ -162,7 +168,7 @@ def term_to_program(term: Term) -> Program:
     if not rules_child:
         raise ValueError("Program term missing rules")
 
-    rules = [term_to_rule(rule_term) for rule_term in rules_child.children]
+    rules = [term_to_rule(rule_term, summarizers=summarizers) for rule_term in rules_child.children]
     max_steps = int(_value_from_term(steps_child.children[0])) if steps_child and steps_child.children else 256
     max_terms = None
     if max_terms_child and max_terms_child.children:
@@ -183,7 +189,9 @@ def rules_to_term(rules: Iterable[Rule]) -> Term:
     return Term(sym="rules", children=[rule_to_term(rule) for rule in rules])
 
 
-def term_to_rules(term: Term) -> list[Rule]:
+def term_to_rules(
+    term: Term, summarizers: dict[str, Callable[[list[Term]], str]] | None = None
+) -> list[Rule]:
     if term.sym != "rules":
         raise ValueError(f"Expected rules term, got {term.sym}")
-    return [term_to_rule(child) for child in term.children]
+    return [term_to_rule(child, summarizers=summarizers) for child in term.children]
