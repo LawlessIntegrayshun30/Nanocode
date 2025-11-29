@@ -1,11 +1,16 @@
 import pytest
+from dataclasses import replace
 
 import pytest
 
 from src.interpreter import Execution, Interpreter, Program
-from src.rewrite import Pattern, Rule
-from src.constraints import StructuralConstraints
+import pytest
+
 from src import terms
+from src.constraints import StructuralConstraints
+from src.interpreter import Execution, Interpreter, Program, validate_program
+from src.rewrite import Pattern, Rule, expand_action
+from src.signature import Signature, TermSignature
 
 
 def expand_leaf(term: terms.Term, _store) -> terms.Term:
@@ -90,4 +95,19 @@ def test_program_constraints_are_enforced():
     interpreter = Interpreter()
     with pytest.raises(ValueError):
         interpreter.run(program)
+
+
+def test_program_validation_respects_signature_patterns():
+    signature = Signature([TermSignature(sym="seed", min_children=0, max_children=0, allowed_scales={0})])
+    program = Program(name="demo", root=terms.Term("seed"), rules=[], signature=signature)
+
+    # unknown pattern symbol
+    bad_rules = [Rule(name="grow", pattern=Pattern(sym="unknown", scale=0), action=expand_action())]
+    with pytest.raises(ValueError):
+        validate_program(replace(program, rules=bad_rules))
+
+    # disallowed pattern scale
+    bad_rules = [Rule(name="grow", pattern=Pattern(sym="seed", scale=2), action=expand_action())]
+    with pytest.raises(ValueError):
+        validate_program(replace(program, rules=bad_rules))
 

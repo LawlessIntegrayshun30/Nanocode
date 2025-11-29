@@ -21,6 +21,7 @@ class Program:
     max_steps: int = 256
     max_terms: Optional[int] = None
     constraints: Optional[StructuralConstraints] = None
+    signature: Signature | None = None
 
     def with_root(self, root: Term) -> "Program":
         """Return a copy of this program using a different root term."""
@@ -32,6 +33,7 @@ class Program:
             max_steps=self.max_steps,
             max_terms=self.max_terms,
             constraints=self.constraints,
+            signature=self.signature,
         )
 
 
@@ -84,13 +86,26 @@ def _validate_term(term: Term) -> None:
         _validate_term(child)
 
 
-def _validate_pattern(pattern: Pattern) -> None:
+def _validate_pattern(pattern: Pattern, signature: Signature | None) -> None:
     if pattern.scale is not None and pattern.scale < 0:
         raise ValueError(f"Pattern scale cannot be negative: {pattern.scale}")
 
+    if signature and pattern.sym is not None:
+        entry = signature.get(pattern.sym)
+        if entry is None:
+            raise ValueError(f"Pattern references unknown symbol '{pattern.sym}'")
+        if pattern.scale is not None and entry.allowed_scales is not None:
+            if pattern.scale not in entry.allowed_scales:
+                raise ValueError(
+                    f"Pattern for {pattern.sym} uses disallowed scale {pattern.scale}; "
+                    f"allowed: {sorted(entry.allowed_scales)}"
+                )
 
-def validate_program(program: Program) -> None:
+
+def validate_program(program: Program, *, signature: Signature | None = None) -> None:
     """Basic sanity checks to catch malformed programs before execution."""
+
+    sig = signature if signature is not None else program.signature
 
     if program.max_steps <= 0:
         raise ValueError("Program max_steps must be positive")
@@ -102,9 +117,12 @@ def validate_program(program: Program) -> None:
         if rule.name in seen_rules:
             raise ValueError(f"Duplicate rule name: {rule.name}")
         seen_rules.add(rule.name)
-        _validate_pattern(rule.pattern)
+        _validate_pattern(rule.pattern, sig)
 
     _validate_term(program.root)
+
+    if sig is not None:
+        sig.validate_tree(program.root)
 
     if program.constraints:
         violations = validate_structure(program.root, program.constraints)
@@ -139,7 +157,8 @@ class Interpreter:
         detect_conflicts: bool = False,
         signature: Signature | None = None,
     ) -> Execution:
-        validate_program(program)
+        sig = signature if signature is not None else program.signature
+        validate_program(program, signature=sig)
 
         if include_rules and exclude_rules:
             overlap = set(include_rules) & set(exclude_rules)
@@ -182,7 +201,7 @@ class Interpreter:
             include_scales=include_scales,
             exclude_scales=exclude_scales,
             detect_conflicts=detect_conflicts,
-            signature=signature,
+            signature=sig,
         )
         root_id = runtime.load(program.root)
 

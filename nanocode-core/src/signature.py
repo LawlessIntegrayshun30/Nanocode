@@ -52,6 +52,11 @@ class Signature:
     def get(self, sym: str) -> TermSignature | None:
         return self._by_sym.get(sym)
 
+    def items(self) -> list[tuple[str, TermSignature]]:
+        """Deterministic access to signature entries."""
+
+        return sorted(self._by_sym.items())
+
     def validate_term(self, term: Term) -> None:
         entry = self.get(term.sym)
         if entry is None:

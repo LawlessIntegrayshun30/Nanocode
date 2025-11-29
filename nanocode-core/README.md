@@ -161,6 +161,7 @@ The command constructs a deterministic program (micro tokens → meso motifs →
 ### Meta-level program representation
 - `src.meta` converts rules/programs into Nanocode `Term` structures (`program_to_term`, `rule_to_term`) and back (`term_to_program`, `term_to_rule`). Actions now carry explicit names/params via `Action`, so rule sets and interpreter configurations can be serialized as first-class Nanocode data for self-hosting, analysis, or mutation in evolutionary loops.
 - The conversion helpers validate shapes and preserve budgets/configuration (`max_steps`, `max_terms`), making it possible to treat entire interpreters as genomes without losing determinism or guardrails.
+- Structural and formal guardrails are also serializable: `constraints_to_term`/`term_to_constraints` round-trip `StructuralConstraints`, while `signature_to_term`/`term_to_signature` preserve symbol/arity/scale signatures so validation policies stay attached to meta-level genomes.
 
 ### Goal-directed agents and policy rollouts
 - `src.agent` defines a minimal agent substrate pairing Nanocode programs with observation encoders and action decoders, plus a lightweight environment protocol. Policies are executed deterministically per observation by re-rooting the program and running through the interpreter.

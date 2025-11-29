@@ -34,11 +34,15 @@ from src.evolution import (  # noqa: F401
 )
 from src.meta import (  # noqa: F401
     action_to_term,
+    constraints_to_term,
     program_to_term,
     rule_to_term,
+    signature_to_term,
     term_to_action,
+    term_to_constraints,
     term_to_program,
     term_to_rule,
+    term_to_signature,
     term_to_rules,
     rules_to_term,
 )

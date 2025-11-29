@@ -218,7 +218,7 @@ def run_cli(argv: Iterable[str] | None = None) -> int:
             program = replace(program, max_steps=args.max_steps)
 
         state = _load_store(args.load_store) if args.load_store else None
-        signature = None
+        signature = program.signature
         if state and isinstance(state, dict) and state.get("signature") is not None:
             signature = Signature.from_dict(state["signature"])
         if args.signature:

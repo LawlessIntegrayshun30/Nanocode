@@ -1,15 +1,24 @@
 import pytest
 
 from src.interpreter import Program
+import pytest
+
+from src.constraints import StructuralConstraints
+from src.interpreter import Program
 from src.meta import (
     action_to_term,
+    constraints_to_term,
     program_to_term,
     rule_to_term,
+    signature_to_term,
     term_to_action,
+    term_to_constraints,
     term_to_program,
     term_to_rule,
+    term_to_signature,
 )
 from src.rewrite import Pattern, Rule, expand_action, reduce_action
+from src.signature import Signature, TermSignature
 from src.terms import Term
 
 
@@ -66,4 +75,37 @@ def test_reduce_action_roundtrip_requires_registered_summarizer():
     restored = term_to_rule(rule_term, summarizers={"summarize": summarize})
     assert restored.action.name == "reduce"
     assert restored.action.params["summarizer"] == "summarize"
+
+
+def test_program_roundtrip_carries_constraints_and_signature():
+    signature = Signature(
+        [
+            TermSignature(sym="seed", min_children=0, max_children=0, allowed_scales={0}),
+            TermSignature(sym="grow", min_children=2, max_children=3, allowed_scales={1}),
+        ]
+    )
+    constraints = StructuralConstraints(max_nodes=10, max_depth=4, min_scale=0, max_scale=2)
+    rules = [Rule(name="grow", pattern=Pattern(sym="seed", scale=0), action=expand_action(fanout=2))]
+    program = Program(
+        name="demo",
+        root=Term("seed"),
+        rules=rules,
+        max_steps=32,
+        max_terms=10,
+        constraints=constraints,
+        signature=signature,
+    )
+
+    program_term = program_to_term(program)
+    rebuilt = term_to_program(program_term)
+
+    assert rebuilt.constraints == constraints
+    assert rebuilt.signature is not None
+    assert rebuilt.signature.to_dict() == signature.to_dict()
+
+    constraints_term = constraints_to_term(constraints)
+    assert term_to_constraints(constraints_term) == constraints
+
+    signature_term = signature_to_term(signature)
+    assert term_to_signature(signature_term).to_dict() == signature.to_dict()
 
